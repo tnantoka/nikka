@@ -29,7 +29,16 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _textController = TextEditingController();
-  final List<Task> _tasks = <Task>[];
+  List<Task> _tasks = <Task>[];
+
+  @override
+  void initState() {
+    super.initState();
+
+    Task.load().then((List<Task> tasks) => setState(() {
+          _tasks = tasks;
+        }));
+  }
 
   void _addNewTask() {
     showDialog<void>(
@@ -54,6 +63,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   final Task task = Task(name: _textController.text);
                   _tasks.insert(0, task);
                 });
+                Task.save(_tasks);
                 Navigator.of(context).pop();
                 _textController.clear();
               },
@@ -101,6 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         setState(() {
                           _tasks.removeAt(index);
                         });
+                        Task.save(_tasks);
                       },
                       itemBuilder: (BuildContext context) =>
                           <PopupMenuItem<String>>[
@@ -118,12 +129,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: const Text('Yesterday'),
                       onPressed: () {
                         setState(() {
-                          task.didYesterday = !task.didYesterday;
-                          task.days = (task.didYesterday ? 1 : 0) +
-                              (task.didToday ? 1 : 0);
+                          task.toggleYesterday();
                         });
+                        Task.save(_tasks);
                       },
-                      color: task.didYesterday
+                      color: task.didYesterday()
                           ? Colors.green[300]
                           : Colors.grey[300],
                     ),
@@ -132,18 +142,18 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: const Text('Today'),
                       onPressed: () {
                         setState(() {
-                          task.didToday = !task.didToday;
-                          task.days = (task.didYesterday ? 1 : 0) +
-                              (task.didToday ? 1 : 0);
+                          task.toggleToday();
                         });
+                        Task.save(_tasks);
                       },
-                      color:
-                          task.didToday ? Colors.green[300] : Colors.grey[300],
+                      color: task.didToday()
+                          ? Colors.green[300]
+                          : Colors.grey[300],
                     ),
                     Expanded(
                       child: Container(
                         alignment: Alignment.centerRight,
-                        child: Text('${_tasks[index].days} days',
+                        child: Text('${_tasks[index].streaks()} days',
                             style: textTheme.subtitle),
                       ),
                     )
