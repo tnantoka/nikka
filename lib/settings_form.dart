@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum DismissDialogAction {
   cancel,
@@ -6,14 +7,29 @@ enum DismissDialogAction {
   save,
 }
 
-class NotificationForm extends StatefulWidget {
+class SettingsForm extends StatefulWidget {
   @override
-  NotificationFormState createState() => NotificationFormState();
+  SettingsFormState createState() => SettingsFormState();
 }
 
-class NotificationFormState extends State<NotificationForm> {
+class SettingsFormState extends State<SettingsForm> {
   bool _isEnabled = false;
   TimeOfDay _time = TimeOfDay.now();
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((SharedPreferences prefs) {
+      setState(() {
+        _isEnabled = prefs.getBool('_isEnabled') ?? false;
+        int hour = prefs.getInt('hour');
+        int minute = prefs.getInt('minute');
+        if (hour != null && minute != null) {
+          _time = TimeOfDay(hour: hour, minute: minute);
+        }
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,6 +53,10 @@ class NotificationFormState extends State<NotificationForm> {
                   onChanged: (bool value) {
                     setState(() {
                       _isEnabled = !_isEnabled;
+                    });
+                    SharedPreferences.getInstance()
+                        .then((SharedPreferences prefs) {
+                      prefs.setBool('_isEnabled', _isEnabled);
                     });
                   },
                 ),
@@ -63,6 +83,11 @@ class NotificationFormState extends State<NotificationForm> {
                       ).then<void>((TimeOfDay value) {
                         setState(() {
                           _time = value;
+                        });
+                        SharedPreferences.getInstance()
+                            .then((SharedPreferences prefs) {
+                          prefs.setInt('hour', value.hour);
+                          prefs.setInt('minute', value.minute);
                         });
                       });
                     },

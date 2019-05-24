@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'notification_form.dart';
+import 'settings_form.dart';
 import 'task.dart';
 
 void main() => runApp(MyApp());
@@ -86,7 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Navigator.push(
               context,
               MaterialPageRoute<void>(
-                builder: (BuildContext context) => NotificationForm(),
+                builder: (BuildContext context) => SettingsForm(),
                 fullscreenDialog: true,
               ),
             );
