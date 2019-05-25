@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 enum DismissDialogAction {
   cancel,
   discard,
@@ -15,6 +17,7 @@ class SettingsForm extends StatefulWidget {
 class SettingsFormState extends State<SettingsForm> {
   bool _isEnabled = false;
   TimeOfDay _time = TimeOfDay.now();
+  FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
 
   @override
   void initState() {
@@ -22,13 +25,41 @@ class SettingsFormState extends State<SettingsForm> {
     SharedPreferences.getInstance().then((SharedPreferences prefs) {
       setState(() {
         _isEnabled = prefs.getBool('_isEnabled') ?? false;
-        int hour = prefs.getInt('hour');
-        int minute = prefs.getInt('minute');
+        final int hour = prefs.getInt('hour');
+        final int minute = prefs.getInt('minute');
         if (hour != null && minute != null) {
           _time = TimeOfDay(hour: hour, minute: minute);
         }
       });
     });
+
+    _flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon');
+    const IOSInitializationSettings initializationSettingsIOS =
+        IOSInitializationSettings();
+    const InitializationSettings initializationSettings =
+        InitializationSettings(
+            initializationSettingsAndroid, initializationSettingsIOS);
+    _flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _updateNotification() async {
+    await _flutterLocalNotificationsPlugin.cancelAll();
+
+    if (!_isEnabled) {
+      return;
+    }
+
+    final Time time = Time(_time.hour, _time.minute, 0);
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
+        AndroidNotificationDetails('reminder', 'Reminder', 'Daily reminder');
+    final IOSNotificationDetails iOSPlatformChannelSpecifics =
+        IOSNotificationDetails();
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
+        androidPlatformChannelSpecifics, iOSPlatformChannelSpecifics);
+    _flutterLocalNotificationsPlugin.showDailyAtTime(0, 'Reminder',
+        "Today's TODOs is over?", time, platformChannelSpecifics);
   }
 
   @override
@@ -58,6 +89,7 @@ class SettingsFormState extends State<SettingsForm> {
                         .then((SharedPreferences prefs) {
                       prefs.setBool('_isEnabled', _isEnabled);
                     });
+                    _updateNotification();
                   },
                 ),
               ],
@@ -81,6 +113,9 @@ class SettingsFormState extends State<SettingsForm> {
                         context: context,
                         initialTime: _time,
                       ).then<void>((TimeOfDay value) {
+                        if (value == null) {
+                          return;
+                        }
                         setState(() {
                           _time = value;
                         });
@@ -89,6 +124,7 @@ class SettingsFormState extends State<SettingsForm> {
                           prefs.setInt('hour', value.hour);
                           prefs.setInt('minute', value.minute);
                         });
+                        _updateNotification();
                       });
                     },
                     child: Row(
